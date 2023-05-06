@@ -28,3 +28,5 @@ IMGUR_CLIENT_ID= (imgur client id)
 ```
 
 7. `python scripts/run_bot.py`
+
+8. Create a bot invite link and invite it to your server
