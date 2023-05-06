@@ -1,4 +1,5 @@
 import requests
+import logging
 import base64
 import io
 import os
@@ -19,4 +20,5 @@ def upload_to_imgur(pil_image) -> str:
             "title": "img",
         },
     ).json()
+    logging.info("Imgur upload " + repr(resp))
     return resp["data"]["link"]
