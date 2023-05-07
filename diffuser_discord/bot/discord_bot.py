@@ -6,7 +6,7 @@ from discord import app_commands
 import asyncio
 import discord
 
-from deepfloyd_if_discord.bot.image_client import ImageClient
+from diffuser_discord.bot.image_client import ImageClient
 
 SYNC_GUILD = os.environ.get("SYNC_GUILD", None)
 BLANK_IMAGE = "https://i.imgur.com/HdKWBzA.png"

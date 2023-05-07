@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="deepfloyd_if-discord-bot",
-    version="0.0.1",
+    name="diffuser-discord-bot",
+    version="0.0.2",
     description="",
-    url="https://github.com/sshh12/deepfloyd_if-discord-bot",
+    url="https://github.com/sshh12/diffuser-discord-bot",
     author="Shrivu Shankar",
     license="MIT",
     packages=find_packages(),

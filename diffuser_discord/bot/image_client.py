@@ -25,7 +25,7 @@ class ImageClient(ABC):
 
 def _local_init():
     global deep_floyd
-    from deepfloyd_if_discord.ml_worker import deepfloyd_gen
+    from diffuser_discord.ml_worker import deepfloyd_gen
 
     deep_floyd = deepfloyd_gen.DeepFloydIF()
     deep_floyd.load_weights()
@@ -33,7 +33,7 @@ def _local_init():
 
 def _local_generate_images(prompt: str, seed: int, nb_images: int, hparams: Dict) -> str:
     global deep_floyd
-    from deepfloyd_if_discord.ml_worker import imgur_utils, image_utils
+    from diffuser_discord.ml_worker import imgur_utils, image_utils
 
     try:
         imgs = deep_floyd.generate_images([prompt] * nb_images, seed=seed, hparams=hparams)
@@ -46,7 +46,7 @@ def _local_generate_images(prompt: str, seed: int, nb_images: int, hparams: Dict
 
 def _local_generate_images_from_image(prompt: str, image_url: str, seed: int, nb_images: int, hparams: Dict) -> str:
     global deep_floyd
-    from deepfloyd_if_discord.ml_worker import imgur_utils, image_utils
+    from diffuser_discord.ml_worker import imgur_utils, image_utils
 
     original_image = image_utils.image_from_url(image_url)
     original_image = original_image.resize((512, 512))
@@ -66,7 +66,7 @@ def _local_generate_images_from_image(prompt: str, image_url: str, seed: int, nb
 
 class LocalGPUClient:
     def __init__(
-        self, max_batch_size: Optional[int] = 4, max_image_batch_size: Optional[int] = 1, max_workers: Optional[int] = 1
+        self, max_batch_size: Optional[int] = 4, max_image_batch_size: Optional[int] = 4, max_workers: Optional[int] = 1
     ) -> None:
         self.max_batch_size = max_batch_size
         self.max_image_batch_size = max_image_batch_size
