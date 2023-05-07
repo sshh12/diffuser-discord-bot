@@ -24,7 +24,7 @@ class DiscordClient(discord.Client):
             await self.tree.sync(guild=guild)
 
 
-class ImageView(discord.ui.View):
+class ImagineView(discord.ui.View):
     def __init__(
         self, prompt: str, user: discord.User, img_client: ImageClient, nb_images: int, seed: Optional[int] = 0
     ):
@@ -35,7 +35,7 @@ class ImageView(discord.ui.View):
         self.seed = seed
         self.nb_images = nb_images
 
-        self.title = f"{prompt} (x{nb_images})"
+        self.title = f"> {prompt}"
         self.image_emb = discord.Embed()
         self.image_emb.set_image(url=BLANK_IMAGE)
         self.generate_image_task = None
@@ -55,7 +55,57 @@ class ImageView(discord.ui.View):
 
     async def generate_image(self, interaction: discord.Interaction):
         logging.info(f"Generating image for {self.prompt}")
-        img_link = await self.img_client.generate_images(self.prompt, self.seed, self.nb_images)
+        img_link = await self.img_client.generate_images(self.prompt, self.seed, self.nb_images, {})
+        self.image_emb.set_image(url=img_link)
+        self.seed += 1
+        self.button.disabled = False
+        self.button.label = "🔄"
+        await interaction.message.edit(embed=self.image_emb, view=self)
+
+
+class EnhanceView(discord.ui.View):
+    def __init__(
+        self,
+        prompt: str,
+        image_url: str,
+        user: discord.User,
+        img_client: ImageClient,
+        nb_images: int,
+        seed: int,
+        strength: int,
+    ):
+        super().__init__(timeout=None)
+        self.prompt = prompt
+        self.image_url = image_url
+        self.user = user
+        self.img_client = img_client
+        self.seed = seed
+        self.strength = strength
+        self.nb_images = nb_images
+
+        self.title = f"> {prompt} on {image_url}"
+        self.image_emb = discord.Embed()
+        self.image_emb.set_image(url=self.image_url)
+        self.generate_image_task = None
+        self.button = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return interaction.user == self.user
+
+    @discord.ui.button(label="Start", custom_id="start", style=discord.ButtonStyle.primary)
+    async def on_start(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.button = button
+        self.button.disabled = True
+        self.button.label = "Loading..."
+        await interaction.response.edit_message(view=self)
+
+        self.generate_image_task = asyncio.create_task(self.generate_image(interaction))
+
+    async def generate_image(self, interaction: discord.Interaction):
+        logging.info(f"Generating image for {self.prompt} on {self.image_url}")
+        img_link = await self.img_client.generate_images_from_image(
+            self.prompt, self.image_url, self.seed, self.nb_images, {"strength": self.strength / 100}
+        )
         self.image_emb.set_image(url=img_link)
         self.seed += 1
         self.button.disabled = False
@@ -71,7 +121,33 @@ def update_discord_client(client: discord.Client, img_client: ImageClient):
     @client.tree.command()
     @app_commands.describe(prompt="Caption to generate an image for", seed="Random seed for image generation")
     async def imagine(interaction: discord.Interaction, prompt: str, seed: Optional[int] = 0, count: Optional[int] = 1):
-        view = ImageView(prompt=prompt, user=interaction.user, img_client=img_client, seed=seed, nb_images=count)
+        view = ImagineView(prompt=prompt, user=interaction.user, img_client=img_client, seed=seed, nb_images=count)
+        await interaction.response.send_message(view.title, embed=view.image_emb, view=view)
+
+    @client.tree.command()
+    @app_commands.describe(
+        prompt="Caption to enhance the image",
+        image_url="The URL to a png/jpg image",
+        strength="Indicates how much to transform the reference `image` [0, 100]",
+        seed="Random seed for image generation",
+    )
+    async def enhance(
+        interaction: discord.Interaction,
+        prompt: str,
+        image_url: str,
+        strength: Optional[int] = 80,
+        seed: Optional[int] = 0,
+        count: Optional[int] = 1,
+    ):
+        view = EnhanceView(
+            prompt=prompt,
+            image_url=image_url,
+            strength=strength,
+            user=interaction.user,
+            img_client=img_client,
+            seed=seed,
+            nb_images=count,
+        )
         await interaction.response.send_message(view.title, embed=view.image_emb, view=view)
 
 

@@ -1,14 +1,16 @@
-from typing import List
+from typing import List, Dict
 
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, IFImg2ImgPipeline, IFImg2ImgSuperResolutionPipeline, IFSuperResolutionPipeline
 import torch
 
 
-class DeepfloydIF:
+class DeepFloydIF:
     def __init__(self):
         self.stage_1 = None
         self.stage_2 = None
         self.stage_3 = None
+        self.stage_1_img2img = None
+        self.stage_2_img2img = None
 
     def load_weights(self):
         self.stage_1 = DiffusionPipeline.from_pretrained(
@@ -28,10 +30,12 @@ class DeepfloydIF:
         )
         self.stage_3.enable_model_cpu_offload()
 
-    def generate_images(self, prompt: str, nb_images: int, seed: int) -> List["Image"]:
-        prompt_embeds, negative_embeds = self.stage_1.encode_prompt([prompt] * nb_images)
+        self.stage_1_img2img = IFImg2ImgPipeline(**self.stage_1.components)
+        self.stage_2_img2img = IFImg2ImgSuperResolutionPipeline(**self.stage_2.components)
 
+    def generate_images(self, prompts: List[str], seed: int, hparams: Dict) -> List["Image"]:
         generator = torch.manual_seed(seed)
+        prompt_embeds, negative_embeds = self.stage_1.encode_prompt(prompts)
 
         images = self.stage_1(
             prompt_embeds=prompt_embeds, negative_prompt_embeds=negative_embeds, generator=generator, output_type="pt"
@@ -45,5 +49,35 @@ class DeepfloydIF:
             output_type="pt",
         ).images
 
-        images = self.stage_3(prompt=[prompt] * nb_images, image=images, generator=generator, noise_level=100).images
+        images = self.stage_3(prompt=prompts, image=images, generator=generator, noise_level=100).images
+        return images
+
+    def generate_images_from_image(
+        self, prompts: List[str], original_images: List["Image"], seed: int, hparams: Dict
+    ) -> List["Image"]:
+        generator = torch.manual_seed(seed)
+        prompt_embeds, negative_embeds = self.stage_1_img2img.encode_prompt(prompts)
+
+        strength = hparams.get("strength")
+
+        images = self.stage_1_img2img(
+            image=original_images,
+            prompt_embeds=prompt_embeds,
+            negative_prompt_embeds=negative_embeds,
+            generator=generator,
+            output_type="pt",
+            strength=strength,
+        ).images
+
+        images = self.stage_2_img2img(
+            image=images,
+            original_image=original_images,
+            prompt_embeds=prompt_embeds,
+            negative_prompt_embeds=negative_embeds,
+            generator=generator,
+            output_type="pt",
+            strength=strength,
+        ).images
+
+        images = self.stage_3(prompt=prompts, image=images, generator=generator, noise_level=100).images
         return images
