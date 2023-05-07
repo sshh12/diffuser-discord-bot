@@ -1,4 +1,5 @@
 from typing import List, Dict
+import gc
 
 from diffusers import DiffusionPipeline, IFImg2ImgPipeline, IFImg2ImgSuperResolutionPipeline, IFSuperResolutionPipeline
 import torch
@@ -32,6 +33,16 @@ class DeepFloydIF:
 
         self.stage_1_img2img = IFImg2ImgPipeline(**self.stage_1.components)
         self.stage_2_img2img = IFImg2ImgSuperResolutionPipeline(**self.stage_2.components)
+
+    def reload_weights(self):
+        del self.stage_1
+        del self.stage_2
+        del self.stage_3
+        del self.stage_1_img2img
+        del self.stage_2_img2img
+        gc.collect()
+        torch.cuda.empty_cache()
+        self.load_weights()
 
     def generate_images(self, prompts: List[str], seed: int, hparams: Dict) -> List["Image"]:
         generator = torch.manual_seed(seed)
@@ -80,4 +91,5 @@ class DeepFloydIF:
         ).images
 
         images = self.stage_3(prompt=prompts, image=images, generator=generator, noise_level=100).images
+
         return images
