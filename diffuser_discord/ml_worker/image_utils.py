@@ -1,17 +1,30 @@
-from typing import List
+from typing import List, Optional, Tuple
 from PIL import Image
 import requests
+import math
 import io
 
 
-def image_grid(imgs: List["Image"], rows: int, cols: int) -> "Image":
-    grid = imgs[0]
-    if len(imgs) > 1:
-        w, h = imgs[0].size
-        grid = Image.new("RGB", size=(cols * w, rows * h))
+def _get_grid_shape(n: int) -> Tuple[int, int]:
+    if n == 1:
+        return (1, 1)
+    else:
+        rows = int(math.ceil(math.sqrt(n)))
+        cols = int(math.ceil(n / float(rows)))
+        return (rows, cols)
 
-        for i, img in enumerate(imgs):
-            grid.paste(img, box=(i % cols * w, i // cols * h))
+
+def image_grid(imgs: List["Image"], shape: Optional[Tuple] = None) -> "Image":
+    if shape is not None:
+        cols, rows = shape
+    else:
+        cols, rows = _get_grid_shape(len(imgs))
+
+    w, h = imgs[0].size
+    grid = Image.new("RGB", size=(cols * w, rows * h))
+
+    for i, img in enumerate(imgs):
+        grid.paste(img, box=(i % cols * w, i // cols * h))
     return grid
 
 

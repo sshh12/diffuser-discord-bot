@@ -1,15 +1,17 @@
-from typing import Optional
-import os
+from typing import Optional, List
 import logging
+import time
+import os
+import re
 
 from discord import app_commands
 import asyncio
 import discord
 
-from diffuser_discord.bot.image_client import ImageClient
+from diffuser_discord.bot.image_client import ImageClient, BLANK_IMAGE
+
 
 SYNC_GUILD = os.environ.get("SYNC_GUILD", None)
-BLANK_IMAGE = "https://i.imgur.com/HdKWBzA.png"
 
 
 class DiscordClient(discord.Client):
@@ -19,21 +21,34 @@ class DiscordClient(discord.Client):
 
     async def setup_hook(self):
         if SYNC_GUILD is not None:
-            guild = discord.Object(id=int(SYNC_GUILD))
-            self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
+            for guild_id in SYNC_GUILD.split(","):
+                guild = discord.Object(id=int(guild_id))
+                self.tree.copy_global_to(guild=guild)
+                await self.tree.sync(guild=guild)
+
+
+def _expand_template(template: str) -> List[str]:
+    """
+    a {photo, painting} of a {dog, cat}
+    """
+    match = re.search(r"\{([^}]+)\}", template)
+    if not match:
+        return [template]
+    options = match.group(1).split(", ")
+    expanded = []
+    for option in options:
+        expanded += _expand_template(template[: match.start()] + option + template[match.end() :])
+    return expanded
 
 
 class ImagineView(discord.ui.View):
-    def __init__(
-        self, prompt: str, user: discord.User, img_client: ImageClient, nb_images: int, seed: Optional[int] = 0
-    ):
+    def __init__(self, prompt: str, user: discord.User, img_client: ImageClient, count: int, seed: Optional[int] = 0):
         super().__init__(timeout=None)
         self.prompt = prompt
         self.user = user
         self.img_client = img_client
         self.seed = seed
-        self.nb_images = nb_images
+        self.count = count
 
         self.title = f"> {prompt}"
         self.image_emb = discord.Embed()
@@ -54,10 +69,11 @@ class ImagineView(discord.ui.View):
         self.generate_image_task = asyncio.create_task(self.generate_image(interaction))
 
     async def generate_image(self, interaction: discord.Interaction):
-        logging.info(f"Generating image for {self.prompt}")
-        img_link = await self.img_client.generate_images(self.prompt, self.seed, self.nb_images, {})
+        prompts = _expand_template(self.prompt)
+        logging.info(f"Generating images for {prompts}")
+        img_link = await self.img_client.generate_images(prompts * self.count, self.seed, {})
         self.image_emb.set_image(url=img_link)
-        self.seed += 1
+        self.seed = hash(time.time())
         self.button.disabled = False
         self.button.label = "🔄"
         await interaction.message.edit(embed=self.image_emb, view=self)
@@ -70,7 +86,7 @@ class EnhanceView(discord.ui.View):
         image_url: str,
         user: discord.User,
         img_client: ImageClient,
-        nb_images: int,
+        count: int,
         seed: int,
         strength: int,
     ):
@@ -81,7 +97,7 @@ class EnhanceView(discord.ui.View):
         self.img_client = img_client
         self.seed = seed
         self.strength = strength
-        self.nb_images = nb_images
+        self.count = count
 
         self.title = f"> {prompt} on {image_url}"
         self.image_emb = discord.Embed()
@@ -102,12 +118,13 @@ class EnhanceView(discord.ui.View):
         self.generate_image_task = asyncio.create_task(self.generate_image(interaction))
 
     async def generate_image(self, interaction: discord.Interaction):
-        logging.info(f"Generating image for {self.prompt} on {self.image_url}")
+        prompts = _expand_template(self.prompt)
+        logging.info(f"Generating image for {prompts} on {self.image_url}")
         img_link = await self.img_client.generate_images_from_image(
-            self.prompt, self.image_url, self.seed, self.nb_images, {"strength": self.strength / 100}
+            prompts * self.count, self.image_url, self.seed, {"strength": self.strength / 100}
         )
         self.image_emb.set_image(url=img_link)
-        self.seed += 1
+        self.seed = hash(time.time())
         self.button.disabled = False
         self.button.label = "🔄"
         await interaction.message.edit(embed=self.image_emb, view=self)
@@ -121,7 +138,7 @@ def update_discord_client(client: discord.Client, img_client: ImageClient):
     @client.tree.command()
     @app_commands.describe(prompt="Caption to generate an image for", seed="Random seed for image generation")
     async def imagine(interaction: discord.Interaction, prompt: str, seed: Optional[int] = 0, count: Optional[int] = 1):
-        view = ImagineView(prompt=prompt, user=interaction.user, img_client=img_client, seed=seed, nb_images=count)
+        view = ImagineView(prompt=prompt, user=interaction.user, img_client=img_client, seed=seed, count=count)
         await interaction.response.send_message(view.title, embed=view.image_emb, view=view)
 
     @client.tree.command()
@@ -146,7 +163,7 @@ def update_discord_client(client: discord.Client, img_client: ImageClient):
             user=interaction.user,
             img_client=img_client,
             seed=seed,
-            nb_images=count,
+            count=count,
         )
         await interaction.response.send_message(view.title, embed=view.image_emb, view=view)
 

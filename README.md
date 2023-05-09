@@ -4,9 +4,17 @@ Run [deep-floyd/IF](https://github.com/deep-floyd/IF) as a basic discord bot.
 
 <img width="344" alt="Discord_GZ6AmvvC6C" src="https://user-images.githubusercontent.com/6625384/236647785-fd66ba83-856f-4c18-8313-f4a214f7ade0.png">
 
-> **/imagine** prompt:"an oil painting of a spiral galaxy" count:3
+**/imagine** prompt:"an oil painting of a spiral galaxy" count:3
 
-## Usage
+## Commands
+
+#### /imagine prompt: an oil painting of a spiral galaxy
+
+#### /enhance prompt: an 1850s photography of a large plantation house, national archives image_url: https://i.imgur.com/O0xNFBQ.jpeg
+
+Both prompts support {template} syntax, e.g. `a {photo, painting} of a {dog, cat}` for 4 different prompts.
+
+## Setup
 
 > These instructions are fairly minimal and likely require some additional debugging to get it to work, if you run into problems feel free to create an issue. If you run into problems specifically on step #1, its best to get help on the official https://github.com/deep-floyd/IF/issues page.
 
