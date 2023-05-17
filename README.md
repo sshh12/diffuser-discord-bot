@@ -1,40 +1,40 @@
 # Diffuser Discord Bot
 
-Run [deep-floyd/IF](https://github.com/deep-floyd/IF) as a basic discord bot.
+This repository allows you to run [deep-floyd/IF](https://github.com/deep-floyd/IF) as a basic Discord bot.
 
-<img width="344" alt="Discord_GZ6AmvvC6C" src="https://user-images.githubusercontent.com/6625384/236647785-fd66ba83-856f-4c18-8313-f4a214f7ade0.png">
+![Discord Bot Image](https://user-images.githubusercontent.com/6625384/236647785-fd66ba83-856f-4c18-8313-f4a214f7ade0.png)
 
-**/imagine** prompt:"an oil painting of a spiral galaxy" count:3
+Use the **/imagine** command with a prompt like `"an oil painting of a spiral galaxy"` to interact with the bot.
 
 ## Commands
 
-#### /imagine prompt: an oil painting of a spiral galaxy
+The following commands are supported:
 
-#### /enhance prompt: an 1850s photography of a large plantation house, national archives image_url: https://i.imgur.com/O0xNFBQ.jpeg
+- `/imagine prompt: <your_prompt_here>`
+- `/enhance prompt: <your_prompt_here> image_url: <image_url_here>`
 
-Both prompts support {template} syntax, e.g. `a {photo, painting} of a {dog, cat}` for 4 different prompts.
+Both prompts support {template} syntax, e.g., `a {photo, painting} of a {dog, cat}` generates 4 different prompts.
 
 ## Setup
 
-> These instructions are fairly minimal and likely require some additional debugging to get it to work, if you run into problems feel free to create an issue. If you run into problems specifically on step #1, its best to get help on the official https://github.com/deep-floyd/IF/issues page.
+The setup instructions are provided below. If you encounter any issues, feel free to create an issue in this repository. For problems specifically related to step 1, it is recommended to seek help on the official [DeepFloyd IF issues page](https://github.com/deep-floyd/IF/issues).
 
-1. Setup DeepFloyd IF at https://github.com/deep-floyd/IF to the point you are able to run the `Diffusers` example completely. This is the hardest part.
-2. `git clone https://github.com/sshh12/diffuser-discord-bot`
-3. Install requirements
+1. Set up DeepFloyd IF at https://github.com/deep-floyd/IF until you can run the `Diffusers` example. This is the most challenging part.
+2. Clone this repository using `git clone https://github.com/sshh12/diffuser-discord-bot`.
+3. Install the required dependencies:
 
-- `pip install -r requirements-bot.txt` (discord bot dependencies)
-- `pip install -r requirements-worker.txt` (model dependencies)
+    - Run `pip install -r requirements-bot.txt` to install Discord bot dependencies.
+    - Run `pip install -r requirements-worker.txt` to install model dependencies.
 
-4. Set up a Discord Bot ([create bot](https://discord.com/developers/applications/))
-5. Set up an Imgur API key ([create app](https://api.imgur.com/oauth2/addclient), anonymous usage)
-6. Set environment variables
+4. Set up a Discord Bot. You can create one [here](https://discord.com/developers/applications/).
+5. Obtain an Imgur API key by creating an app [here](https://api.imgur.com/oauth2/addclient). You can use it anonymously.
+6. Set up the following environment variables:
 
-```
-DISCORD_TOKEN= (bot secret token)
-SYNC_GUILD= (optional guild id of server)
-IMGUR_CLIENT_ID= (imgur client id)
-```
+    ```
+    DISCORD_TOKEN= (your bot's secret token)
+    SYNC_GUILD= (optional guild id of your server)
+    IMGUR_CLIENT_ID= (your Imgur client id)
+    ```
 
-7. `python scripts/run_bot.py`
-
-8. Create a bot invite link and invite it to your server
+7. Run the bot using `python scripts/run_bot.py`.
+8. Create a bot invite link and invite the bot to your server.
