@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 import asyncio
 import logging
+import modal
 
 
 ERROR_IMAGE = "https://i.imgur.com/CJ7DFk3.png"
@@ -74,7 +75,7 @@ def _local_generate_images_from_image(
     return ERROR_IMAGE
 
 
-class LocalGPUClient:
+class LocalGPUClient(ImageClient):
     def __init__(
         self, max_batch_size: Optional[int] = 4, max_image_batch_size: Optional[int] = 4, max_workers: Optional[int] = 1
     ) -> None:
@@ -105,3 +106,29 @@ class LocalGPUClient:
             hparams,
         )
         return output_link
+
+
+class ModalClient(ImageClient):
+    MAX_BATCH_SIZE = 9
+
+    def __init__(self) -> None:
+        pass
+
+    def init(self):
+        self.generate_images_func = modal.Function.lookup("diffuser-discord-bot", "generate_images")
+
+    async def generate_images(self, prompts: List[str], seed: int, hparams: Dict) -> str:
+        # arbitrary cap
+        if len(prompts) > ModalClient.MAX_BATCH_SIZE:
+            prompts = prompts[: ModalClient.MAX_BATCH_SIZE]
+        out_url = await self.generate_images_func.remote.aio(
+            prompts,
+            seed,
+            hparams.get("steps", 50),
+            hparams.get("high_noise_frac", 0.8),
+            hparams.get("negative_prompt", 0.8),
+        )
+        return out_url
+
+    async def generate_images_from_image(self, prompts: List[str], image_url: str, seed: int, hparams: Dict) -> str:
+        raise NotImplementedError("ModalClient does not support image generation from image")

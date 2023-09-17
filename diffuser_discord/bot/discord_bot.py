@@ -42,12 +42,21 @@ def _expand_template(template: str) -> List[str]:
 
 
 class ImagineView(discord.ui.View):
-    def __init__(self, prompt: str, user: discord.User, img_client: ImageClient, count: int, seed: Optional[int] = 0):
+    def __init__(
+        self,
+        prompt: str,
+        user: discord.User,
+        img_client: ImageClient,
+        count: int,
+        negative_prompt: str,
+        seed: Optional[int] = 0,
+    ):
         super().__init__(timeout=None)
         self.prompt = prompt
         self.user = user
         self.img_client = img_client
         self.seed = seed
+        self.negative_prompt = negative_prompt
         self.count = count
 
         self.title = f"> {prompt}"
@@ -71,7 +80,9 @@ class ImagineView(discord.ui.View):
     async def generate_image(self, interaction: discord.Interaction):
         prompts = _expand_template(self.prompt)
         logging.info(f"Generating images for {prompts}")
-        img_link = await self.img_client.generate_images(prompts * self.count, self.seed, {})
+        img_link = await self.img_client.generate_images(
+            prompts * self.count, self.seed, {"negative_prompt": self.negative_prompt}
+        )
         self.image_emb.set_image(url=img_link)
         self.seed = hash(time.time())
         self.button.disabled = False
@@ -137,8 +148,21 @@ def update_discord_client(client: discord.Client, img_client: ImageClient):
 
     @client.tree.command()
     @app_commands.describe(prompt="Caption to generate an image for", seed="Random seed for image generation")
-    async def imagine(interaction: discord.Interaction, prompt: str, seed: Optional[int] = 0, count: Optional[int] = 1):
-        view = ImagineView(prompt=prompt, user=interaction.user, img_client=img_client, seed=seed, count=count)
+    async def imagine(
+        interaction: discord.Interaction,
+        prompt: str,
+        seed: Optional[int] = 0,
+        count: Optional[int] = 1,
+        negative_prompt: Optional[str] = "disfigured, ugly, deformed",
+    ):
+        view = ImagineView(
+            prompt=prompt,
+            user=interaction.user,
+            img_client=img_client,
+            seed=seed,
+            count=count,
+            negative_prompt=negative_prompt,
+        )
         await interaction.response.send_message(view.title, embed=view.image_emb, view=view)
 
     @client.tree.command()
