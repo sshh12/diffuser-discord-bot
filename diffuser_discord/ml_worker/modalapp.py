@@ -28,7 +28,7 @@ image = (
 stub = modal.Stub("diffuser-discord-bot", image=image)
 
 
-@stub.cls(gpu=modal.gpu.A10G(), container_idle_timeout=60)
+@stub.cls(gpu=modal.gpu.A10G(), container_idle_timeout=120)
 class Model:
     def __enter__(self):
         import torch
@@ -79,6 +79,7 @@ class Model:
 
 @stub.function(
     allow_concurrent_inputs=20,
+    container_idle_timeout=120,
     mounts=[
         modal.Mount.from_local_python_packages(
             "diffuser_discord.ml_worker.imgur_utils", "diffuser_discord.ml_worker.image_utils"
